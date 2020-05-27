@@ -8,9 +8,7 @@ uses
   
   TSimpleRestRequest
       .New
-        .BaseURL('')
-        .AddHeaders('wsc-api-key', FParent.APIKey)
-        .AddHeaders('wsc-access-key', FParent.AccessKey)
+        .BaseURL('http://seusite.com')
         .ContentType('application/json')
       .Get
       .Return
