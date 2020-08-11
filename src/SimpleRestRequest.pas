@@ -19,10 +19,14 @@ type
       FBaseURL : String;
       FStreamSend : TStringStream;
       FReturn : String;
+      function IsBasicAuthentication : Boolean;
     public
       constructor Create;
       destructor Destroy; override;
       class function New : iSimpleRestResquest;
+      function StatusCode : Integer;
+      function Password ( aValue : string) : iSimpleRestResquest;
+      function Username ( aValue : string) : iSimpleRestResquest;
       function AddHeaders ( aKey : String; aValue : String) : iSimpleRestResquest;
       function ContentType (aValue : String) : iSimpleRestResquest;
       function Connection (aValue : String) : iSimpleRestResquest;
@@ -131,9 +135,21 @@ begin
   FIdHTTP.HandleRedirects := aValue;
 end;
 
+function TSimpleRestRequest.IsBasicAuthentication: Boolean;
+begin
+  Result := (FIdHTTP.Request.Password <> '') and (FIdHTTP.Request.Username <> '');
+end;
+
 class function TSimpleRestRequest.New: iSimpleRestResquest;
 begin
     Result := Self.Create;
+end;
+
+function TSimpleRestRequest.Password(aValue: string): iSimpleRestResquest;
+begin
+  Result := Self;
+  FIdHTTP.Request.Password := aValue;
+  FIdHTTP.Request.BasicAuthentication := IsBasicAuthentication;
 end;
 
 function TSimpleRestRequest.Post: iSimpleRestResquest;
@@ -166,10 +182,22 @@ begin
   Result := FReturn;
 end;
 
+function TSimpleRestRequest.StatusCode: Integer;
+begin
+  Result := FIdHTTP.ResponseCode;
+end;
+
 function TSimpleRestRequest.UserAgent(aValue: String): iSimpleRestResquest;
 begin
   Result := Self;
   FIdHTTP.Request.UserAgent := aValue;
+end;
+
+function TSimpleRestRequest.Username(aValue: string): iSimpleRestResquest;
+begin
+  Result := Self;
+  FIdHTTP.Request.Username := aValue;
+  FIdHTTP.Request.BasicAuthentication := IsBasicAuthentication;
 end;
 
 end.
