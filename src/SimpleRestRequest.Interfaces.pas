@@ -7,6 +7,9 @@ uses
 
 type
   iSimpleRestResquest = interface
+    function StatusCode : Integer;
+    function Password ( aValue : string) : iSimpleRestResquest;
+    function Username ( aValue : string) : iSimpleRestResquest;
     function AddHeaders ( aKey : String; aValue : String) : iSimpleRestResquest;
     function ContentType (aValue : String) : iSimpleRestResquest;
     function Connection (aValue : String) : iSimpleRestResquest;
