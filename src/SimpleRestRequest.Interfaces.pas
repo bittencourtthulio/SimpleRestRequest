@@ -3,25 +3,26 @@ unit SimpleRestRequest.Interfaces;
 interface
 
 uses
-  System.JSON;
+  {$IF CompilerVersion > 22}System.JSON,{$ELSE} JsonDataObjects,{$IFEND}IdSSLOpenSSL;
 
 type
-  iSimpleRestResquest = interface
+  iSimpleRestRequest = interface
     function StatusCode : Integer;
-    function Password ( aValue : string) : iSimpleRestResquest;
-    function Username ( aValue : string) : iSimpleRestResquest;
-    function AddHeaders ( aKey : String; aValue : String) : iSimpleRestResquest;
-    function ContentType (aValue : String) : iSimpleRestResquest;
-    function Connection (aValue : String) : iSimpleRestResquest;
-    function UserAgent (aValue : String) : iSimpleRestResquest;
-    function HandleRedirects ( aValue : Boolean ) : iSimpleRestResquest;
-    function BaseURL (aValue : String) : iSimpleRestResquest;
-    function Body (aValue : String)  : iSimpleRestResquest; overload;
-    function Body (aValue : TJsonObject) : iSimpleRestResquest; overload;
-    function Post : iSimpleRestResquest;
-    function Get : iSimpleRestResquest;
-    function Delete : iSimpleRestResquest;
-    function Put : iSimpleRestResquest;
+    function Password ( aValue : string) : iSimpleRestRequest;
+    function Username ( aValue : string) : iSimpleRestRequest;
+    function IOHandler( aValue : TIdSSLIOHandlerSocketOpenSSL) : iSimpleRestRequest;
+    function AddHeaders ( aKey : String; aValue : String) : iSimpleRestRequest;
+    function ContentType (aValue : String) : iSimpleRestRequest;
+    function Connection (aValue : String) : iSimpleRestRequest;
+    function UserAgent (aValue : String) : iSimpleRestRequest;
+    function HandleRedirects ( aValue : Boolean ) : iSimpleRestRequest;
+    function BaseURL (aValue : String) : iSimpleRestRequest;
+    function Body (aValue : String)  : iSimpleRestRequest; overload;
+    function Body ({$IF CompilerVersion > 22}aValue : TJsonObject{$ELSE} aValue : TJDOJsonObject{$IFEND}) : iSimpleRestRequest; overload;
+    function Post : iSimpleRestRequest;
+    function Get : iSimpleRestRequest;
+    function Delete : iSimpleRestRequest;
+    function Put : iSimpleRestRequest;
     function Return : String;
   end;
 
