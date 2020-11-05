@@ -2,8 +2,14 @@ unit SimpleRestRequest.Interfaces;
 
 interface
 
+{$I SimpleRestRequest.inc}
+
 uses
-  {$IF CompilerVersion > 22}System.JSON,{$ELSE} JsonDataObjects,{$IFEND}IdSSLOpenSSL;
+  {$ifdef HASJSONDATAOBJCTS}JsonDataObjects,{$endif}
+  {$IF CompilerVersion > 22}
+   System.JSON,
+  {$IFEND}
+  IdSSLOpenSSL;
 
 type
   iSimpleRestRequest = interface
@@ -18,7 +24,12 @@ type
     function HandleRedirects ( aValue : Boolean ) : iSimpleRestRequest;
     function BaseURL (aValue : String) : iSimpleRestRequest;
     function Body (aValue : String)  : iSimpleRestRequest; overload;
-    function Body ({$IF CompilerVersion > 22}aValue : TJsonObject{$ELSE} aValue : TJDOJsonObject{$IFEND}) : iSimpleRestRequest; overload;
+    {$IF CompilerVersion > 22}
+    function Body (aValue : TJsonObject) : iSimpleRestRequest; overload;
+    {$IFEND}
+    {$ifdef HASJSONDATAOBJCTS}
+    function Body (aValue : TJDOJsonObject) : iSimpleRestRequest; overload;
+    {$endif}
     function Post : iSimpleRestRequest;
     function Get : iSimpleRestRequest;
     function Delete : iSimpleRestRequest;

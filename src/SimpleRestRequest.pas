@@ -2,6 +2,8 @@ unit SimpleRestRequest;
 
 interface
 
+{$I SimpleRestRequest.inc}
+
 uses
   SimpleRestRequest.Interfaces,
   IdBaseComponent,
@@ -9,9 +11,13 @@ uses
   IdTCPConnection,
   IdTCPClient,
   IdHTTP,
-  IdSSLOpenSSL,
-  {$IF CompilerVersion > 22}System.JSON,{$ELSE} JsonDataObjects,{$IFEND}
-  {$IF CompilerVersion > 22}System.{$IFEND}Classes;
+  {$ifdef HASJSONDATAOBJCTS}JsonDataObjects,{$endif}
+  {$IF CompilerVersion > 22}
+   System.JSON, System.Classes,
+  {$ELSE}
+  Classes,
+  {$IFEND}
+  IdSSLOpenSSL;
 
 type
   TSimpleRestRequest = class(TInterfacedObject, iSimpleRestRequest)
@@ -36,8 +42,13 @@ type
       function UserAgent (aValue : String) : iSimpleRestRequest;
       function HandleRedirects ( aValue : Boolean ) : iSimpleRestRequest;
       function BaseURL (aValue : String) : iSimpleRestRequest;
-      function Body (aValue : String)  : iSimpleRestRequest; overload;
+      function Body(aValue: String): iSimpleRestRequest; overload;
+      {$IF CompilerVersion > 22}
       function Body (aValue : TJsonObject) : iSimpleRestRequest; overload;
+      {$IFEND}
+      {$ifdef HASJSONDATAOBJCTS}
+      function Body (aValue : TJDOJsonObject) : iSimpleRestRequest; overload;
+      {$endif}
       function Post : iSimpleRestRequest;
       function Get : iSimpleRestRequest;
       function Delete : iSimpleRestRequest;
@@ -62,17 +73,27 @@ begin
   FBaseURL := aValue;
 end;
 
+{$ifdef HASJSONDATAOBJCTS}
+function TSimpleRestRequest.Body(aValue: TJDOJsonObject): iSimpleRestRequest;
+begin
+  Result := Self;
+  FStreamSend := TStringStream.Create(aValue.ToJSON);
+end;
+{$endif}
+
 function TSimpleRestRequest.Body(aValue: String): iSimpleRestRequest;
 begin
   Result := Self;
   FStreamSend := TStringStream.Create(aValue);
 end;
 
+{$IF CompilerVersion > 22}
 function TSimpleRestRequest.Body(aValue: TJsonObject): iSimpleRestRequest;
 begin
   Result := Self;
   FStreamSend := TStringStream.Create(aValue.ToJSON);
 end;
+{$IFEND}
 
 function TSimpleRestRequest.Connection(aValue: String): iSimpleRestRequest;
 begin
