@@ -2,6 +2,8 @@ unit SimpleRestRequest;
 
 interface
 
+{$I SimpleRestRequest.inc}
+
 uses
   SimpleRestRequest.Interfaces,
   IdBaseComponent,
@@ -9,13 +11,19 @@ uses
   IdTCPConnection,
   IdTCPClient,
   IdHTTP,
-  System.JSON,
-  System.Classes;
+  {$ifdef HASJSONDATAOBJCTS}JsonDataObjects,{$endif}
+  {$IF CompilerVersion > 22}
+   System.JSON, System.Classes,
+  {$ELSE}
+  Classes,
+  {$IFEND}
+  IdSSLOpenSSL;
 
 type
-  TSimpleRestRequest = class(TInterfacedObject, iSimpleRestResquest)
+  TSimpleRestRequest = class(TInterfacedObject, iSimpleRestRequest)
     private
       FIdHTTP : TIdHTTP;
+      FIdSSLIOHandlerSocket: TIdSSLIOHandlerSocketOpenSSL;
       FBaseURL : String;
       FStreamSend : TStringStream;
       FReturn : String;
@@ -23,22 +31,28 @@ type
     public
       constructor Create;
       destructor Destroy; override;
-      class function New : iSimpleRestResquest;
+      class function New : iSimpleRestRequest;
       function StatusCode : Integer;
-      function Password ( aValue : string) : iSimpleRestResquest;
-      function Username ( aValue : string) : iSimpleRestResquest;
-      function AddHeaders ( aKey : String; aValue : String) : iSimpleRestResquest;
-      function ContentType (aValue : String) : iSimpleRestResquest;
-      function Connection (aValue : String) : iSimpleRestResquest;
-      function UserAgent (aValue : String) : iSimpleRestResquest;
-      function HandleRedirects ( aValue : Boolean ) : iSimpleRestResquest;
-      function BaseURL (aValue : String) : iSimpleRestResquest;
-      function Body (aValue : String)  : iSimpleRestResquest; overload;
-      function Body (aValue : TJsonObject) : iSimpleRestResquest; overload;
-      function Post : iSimpleRestResquest;
-      function Get : iSimpleRestResquest;
-      function Delete : iSimpleRestResquest;
-      function Put : iSimpleRestResquest;
+      function Password ( aValue : string) : iSimpleRestRequest;
+      function Username ( aValue : string) : iSimpleRestRequest;
+      function IOHandler( aValue : TIdSSLIOHandlerSocketOpenSSL) : iSimpleRestRequest;
+      function AddHeaders ( aKey : String; aValue : String) : iSimpleRestRequest;
+      function ContentType (aValue : String) : iSimpleRestRequest;
+      function Connection (aValue : String) : iSimpleRestRequest;
+      function UserAgent (aValue : String) : iSimpleRestRequest;
+      function HandleRedirects ( aValue : Boolean ) : iSimpleRestRequest;
+      function BaseURL (aValue : String) : iSimpleRestRequest;
+      function Body(aValue: String): iSimpleRestRequest; overload;
+      {$IF CompilerVersion > 22}
+      function Body (aValue : TJsonObject) : iSimpleRestRequest; overload;
+      {$IFEND}
+      {$ifdef HASJSONDATAOBJCTS}
+      function Body (aValue : TJDOJsonObject) : iSimpleRestRequest; overload;
+      {$endif}
+      function Post : iSimpleRestRequest;
+      function Get : iSimpleRestRequest;
+      function Delete : iSimpleRestRequest;
+      function Put : iSimpleRestRequest;
       function Return : String;
   end;
 
@@ -47,37 +61,47 @@ implementation
 { TSimpleRestRequest }
 
 function TSimpleRestRequest.AddHeaders(aKey,
-  aValue: String): iSimpleRestResquest;
+  aValue: String): iSimpleRestRequest;
 begin
   Result := Self;
   FIdHTTP.Request.CustomHeaders.AddValue(aKey, aValue);
 end;
 
-function TSimpleRestRequest.BaseURL(aValue: String): iSimpleRestResquest;
+function TSimpleRestRequest.BaseURL(aValue: String): iSimpleRestRequest;
 begin
   Result := Self;
   FBaseURL := aValue;
 end;
 
-function TSimpleRestRequest.Body(aValue: String): iSimpleRestResquest;
+{$ifdef HASJSONDATAOBJCTS}
+function TSimpleRestRequest.Body(aValue: TJDOJsonObject): iSimpleRestRequest;
+begin
+  Result := Self;
+  FStreamSend := TStringStream.Create(aValue.ToJSON);
+end;
+{$endif}
+
+function TSimpleRestRequest.Body(aValue: String): iSimpleRestRequest;
 begin
   Result := Self;
   FStreamSend := TStringStream.Create(aValue);
 end;
 
-function TSimpleRestRequest.Body(aValue: TJsonObject): iSimpleRestResquest;
+{$IF CompilerVersion > 22}
+function TSimpleRestRequest.Body(aValue: TJsonObject): iSimpleRestRequest;
 begin
   Result := Self;
   FStreamSend := TStringStream.Create(aValue.ToJSON);
 end;
+{$IFEND}
 
-function TSimpleRestRequest.Connection(aValue: String): iSimpleRestResquest;
+function TSimpleRestRequest.Connection(aValue: String): iSimpleRestRequest;
 begin
   Result := Self;
   FIdHTTP.Request.Connection := aValue;
 end;
 
-function TSimpleRestRequest.ContentType(aValue: String): iSimpleRestResquest;
+function TSimpleRestRequest.ContentType(aValue: String): iSimpleRestRequest;
 begin
   Result := Self;
   FIdHTTP.Request.ContentType := aValue;
@@ -91,14 +115,14 @@ begin
   FIdHTTP.HandleRedirects := true;
 end;
 
-function TSimpleRestRequest.Delete: iSimpleRestResquest;
+function TSimpleRestRequest.Delete: iSimpleRestRequest;
 var
   FStreamResult : TStringStream;
 begin
   Result := Self;
   FStreamResult := TStringStream.Create;
   try
-    FIdHTTP.Delete(FBaseURL, FStreamResult);
+//    FIdHTTP.Delete(FBaseURL, FStreamResult);
     FReturn := FStreamResult.DataString;
   finally
     FStreamResult.Free;
@@ -114,7 +138,7 @@ begin
   inherited;
 end;
 
-function TSimpleRestRequest.Get: iSimpleRestResquest;
+function TSimpleRestRequest.Get: iSimpleRestRequest;
 var
   FStreamResult : TStringStream;
 begin
@@ -129,10 +153,18 @@ begin
 end;
 
 function TSimpleRestRequest.HandleRedirects(
-  aValue: Boolean): iSimpleRestResquest;
+  aValue: Boolean): iSimpleRestRequest;
 begin
   Result := Self;
   FIdHTTP.HandleRedirects := aValue;
+end;
+
+function TSimpleRestRequest.IOHandler(
+  aValue: TIdSSLIOHandlerSocketOpenSSL): iSimpleRestRequest;
+begin
+  Result := Self;
+  FIdSSLIOHandlerSocket := aValue;
+  FIdHTTP.IOHandler := FIdSSLIOHandlerSocket;
 end;
 
 function TSimpleRestRequest.IsBasicAuthentication: Boolean;
@@ -140,25 +172,25 @@ begin
   Result := (FIdHTTP.Request.Password <> '') and (FIdHTTP.Request.Username <> '');
 end;
 
-class function TSimpleRestRequest.New: iSimpleRestResquest;
+class function TSimpleRestRequest.New: iSimpleRestRequest;
 begin
     Result := Self.Create;
 end;
 
-function TSimpleRestRequest.Password(aValue: string): iSimpleRestResquest;
+function TSimpleRestRequest.Password(aValue: string): iSimpleRestRequest;
 begin
   Result := Self;
   FIdHTTP.Request.Password := aValue;
   FIdHTTP.Request.BasicAuthentication := IsBasicAuthentication;
 end;
 
-function TSimpleRestRequest.Post: iSimpleRestResquest;
+function TSimpleRestRequest.Post: iSimpleRestRequest;
 begin
   Result := Self;
   FReturn := FIdHTTP.Post(FBaseURL, FStreamSend);
 end;
 
-function TSimpleRestRequest.Put: iSimpleRestResquest;
+function TSimpleRestRequest.Put: iSimpleRestRequest;
 var
   FStreamResult : TStringStream;
 begin
@@ -187,13 +219,13 @@ begin
   Result := FIdHTTP.ResponseCode;
 end;
 
-function TSimpleRestRequest.UserAgent(aValue: String): iSimpleRestResquest;
+function TSimpleRestRequest.UserAgent(aValue: String): iSimpleRestRequest;
 begin
   Result := Self;
   FIdHTTP.Request.UserAgent := aValue;
 end;
 
-function TSimpleRestRequest.Username(aValue: string): iSimpleRestResquest;
+function TSimpleRestRequest.Username(aValue: string): iSimpleRestRequest;
 begin
   Result := Self;
   FIdHTTP.Request.Username := aValue;
