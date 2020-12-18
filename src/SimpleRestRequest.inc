@@ -1,0 +1,1 @@
+{$define HASJSONDATAOBJCTS}// Desabilitar caso não tenha ou não deseje utilizar a unit https://github.com/ahausladen/JsonDataObjects#json-data-objects
